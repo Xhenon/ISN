@@ -1,21 +1,52 @@
 #-*-coding: utf-8 -*-
+from tkinter import *
+from math import *
 
 class Grille(object):
 
-    def __init__(self , x , y , model):
+    def __init__(self , x , y , radius , model):
+        self.turn ="j1"
         self.tailleX = x
         self.tailleY = y
+        self.finish = False
         self.model = model
+        ca = Case(0 , 0)
+        self.radius = radius
         self.grille = [[0 for x in range(self.tailleX)] for y in range(self.tailleY)]
+        self.cases = [[ca for x in range(self.tailleX)] for y in range(self.tailleY)]
 
     def placer(self , case , joueur):
         self.grille[case.getX()][case.getY()] = joueur
 
+    def setFinish(self, finish):
+        self.finish = finish
+
+    def isFinished(self):
+        return self.finish
+
+    def setCase(self, x , y , case):
+        self.cases[x][y]= case
+
+    def getRadius(self):
+        return self.radius
+
     def getGrid(self):
         return self.grille
 
+    def getCases(self): #retourne les coordonnées en pixel des hexagones/cercles sur l'écran
+        return self.cases
+
     def getModel(self):
         return self.model
+
+    def getTurn(self):
+        return self.turn
+
+    def nextTurn(self):
+        if self.turn == "j1":
+            self.turn = "j2"
+        else:
+            self.turn = "j1"
 
     def getJoueur1Cases(self):
         cases = []
@@ -61,6 +92,7 @@ class Case(object):
     def getY(self):
         return self.y
 
+
 #-----méthodes-----
 
 
@@ -74,12 +106,12 @@ def getAdjacentTilesTo(case):      #retourne les cases adjacentes à  celle ind
     cases = []
     modelList = []
     if grille.getModel() == "hexagone":
-        modelList.append(Case(-1,-1))
         modelList.append(Case(0,-1))
+        modelList.append(Case(1,-1))
         modelList.append(Case(-1,0))
         modelList.append(Case(1,0))
         modelList.append(Case(0,1))
-        modelList.append(Case(1,1))
+        modelList.append(Case(-1,1))
 
     for i in range(len(modelList)):
         if(modelList[i].getX()+case.getX() >=0 and modelList[i].getY()+case.getY() >=0 and modelList[i].getX()+case.getX()<grille.getTailleX() and modelList[i].getY()+case.getY()<grille.getTailleY()):
@@ -90,6 +122,7 @@ def unGagnant():
     if not testSiCheminExiste('1'):
         if not testSiCheminExiste('2'):
             return False
+    grille.setFinish(True)
     return True
 
 def testSiCheminExiste(joueur):
@@ -197,32 +230,80 @@ def listContainY(list , y):     #return True si la liste contient une case avec 
             return True
     return False
 
+def _create_circle(self, x, y, r, **kwargs):
+    return self.create_oval(x-r, y-r, x+r, y+r, **kwargs)
+Canvas.create_circle = _create_circle
+
+
+def Clic(event):
+    X = event.x
+    Y = event.y
+    for i in range(len(grille.getCases())):
+        for j in range(len(grille.getCases()[0])):
+            if sqrt((X-grille.getCases()[i][j].getX())**2+(Y-grille.getCases()[i][j].getY())**2)<grille.getRadius():
+                if grille.getGrid()[i][j]==0 and not grille.isFinished():
+                    if grille.getTurn()=="j1":
+                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="blue")
+                        grille.placer(Case(i, j) , '1')
+                        grille.nextTurn()
+                    else:
+                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
+                        grille.placer(Case(i, j) , '2')
+                        grille.nextTurn()
+                    print("partie pour un des deux joueurs :", unGagnant())
+                    grille.afficherGrille()
+
+def fillBoard(x , y, shiftX, shiftY):
+    xshift2 = 0
+    for j in range(y):
+        for i in range(x):
+            can.create_circle(i*70+shiftX+xshift2, j*60+shiftY , 32 , fill="grey")
+            grille.setCase(i, j, Case(i*70+shiftX+xshift2, j*60+shiftY))
+        xshift2+=32
+
+
 #-------------début du programme-------------
 
-grille = Grille(4 , 4 , "hexagone")
+x,y = 11,11
 
-grille.placer(Case(0 , 0) , '2')
-grille.placer(Case(1 , 1) , '2')
-grille.placer(Case(2 , 2) , '2')
-grille.placer(Case(3 , 3) , '2')
+fen = Tk()
+can = Canvas(fen, width=1200, height=800, bg='ivory')
+can.pack(side=TOP)
 
-grille.afficherGrille()
+grille = Grille(x , y , 32 , "hexagone")                #1= horizontal , 2 = vertical
 
-entree = input("Entrer une commande")
-inp = entree.split()
+fillBoard(x , y , 60 , 60)
+
+##grille.placer(Case(0 , 0) , '1')
+##grille.placer(Case(1 , 0) , '1')
+##grille.placer(Case(1 , 1) , '2')
+##grille.placer(Case(2 , 0) , '1')
+##grille.placer(Case(3 , 0) , '1')
+##grille.afficherGrille()
+##print(unGagnant())
+
+can.bind('<Button-1>', Clic)
+fen.mainloop()
 
 
-while (inp[0] != "exit"):       #boucle principale
-    if inp[0] == "placer" and len(inp) == 4:
-        grille.placer(Case(int(inp[1]), int(inp[2])) , inp[3])
-        print("partie pour un des deux joueurs :", unGagnant())
-        grille.afficherGrille()
+##grille.afficherGrille()
 
-    elif inp[0] == "aff":
-        grille.afficherGrille()
+##entree = input("Entrer une commande")
+##inp = entree.split()
 
-    entree = input("Entrer une commande")
-    inp = entree.split()
+
+##while (inp[0] != "exit"):       #boucle principale
+##    if inp[0] == "placer" and len(inp) == 4:
+##        grille.placer(Case(int(inp[1]), int(inp[2])) , inp[3])
+##        print("partie pour un des deux joueurs :", unGagnant())
+##        grille.afficherGrille()
+##
+##    elif inp[0] == "aff":
+##        grille.afficherGrille()
+##
+##    entree = input("Entrer une commande")
+##    inp = entree.split()
+
 
 
 
