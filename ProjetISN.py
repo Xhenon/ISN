@@ -261,6 +261,11 @@ def fillBoard(x , y, shiftX, shiftY):
             grille.setCase(i, j, Case(i*70+shiftX+xshift2, j*60+shiftY))
         xshift2+=32
 
+def bordRougeBleu(x,y):
+    can.create_rectangle(0,0,20,800,fill="blue")
+    can.create_rectangle(1180,0,1200,800,fill="blue")
+    can.create_rectangle(0,0,1200,20,fill="red")
+    can.create_rectangle(0,800,1200,780,fill="red")
 
 #-------------début du programme-------------
 
@@ -273,6 +278,8 @@ can.pack(side=TOP)
 grille = Grille(x , y , 32 , "hexagone")                #1= horizontal , 2 = vertical
 
 fillBoard(x , y , 60 , 60)
+
+bordRougeBleu(x , y)
 
 ##grille.placer(Case(0 , 0) , '1')
 ##grille.placer(Case(1 , 0) , '1')
