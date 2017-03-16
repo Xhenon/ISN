@@ -1,11 +1,14 @@
 #-*-coding: utf-8 -*-
 from tkinter import *
 from math import *
+import socket
+from threading import Thread
+from time import sleep
 
 class Grille(object):
 
     def __init__(self , x , y , radius , model):
-        self.turn ="j1"
+        self.turn ="1"
         self.tailleX = x
         self.tailleY = y
         self.finish = False
@@ -43,10 +46,10 @@ class Grille(object):
         return self.turn
 
     def nextTurn(self):
-        if self.turn == "j1":
-            self.turn = "j2"
+        if self.turn == "1":
+            self.turn = "2"
         else:
-            self.turn = "j1"
+            self.turn = "1"
 
     def getJoueur1Cases(self):
         cases = []
@@ -95,6 +98,33 @@ class Case(object):
 
 #-----méthodes-----
 
+#-----Méthodes pour connections en lignes
+def recieve():
+    global joueur
+    while True:
+        data = ''
+        data = s.recv(1024).decode()
+        d= data.split(" ")
+        if d[0]== "j":
+            joueur = d[1]
+            print("Client affecté au joueur "+ joueur)
+        elif data == "fin":
+            s.close()
+        elif d[0] == "placer1":
+            grille.placer(Case(int(d[1]) , int(d[2])), "1")
+            can.create_circle(grille.getCases()[int(d[1])][int(d[2])].getX() , grille.getCases()[int(d[1])][int(d[2])].getY() , grille.getRadius() , fill="blue")
+            unGagnant()
+            grille.nextTurn()
+        elif d[0] == "placer2":
+            grille.placer(Case(int(d[1]) , int(d[2])), "2")
+            can.create_circle(grille.getCases()[int(d[1])][int(d[2])].getX() , grille.getCases()[int(d[1])][int(d[2])].getY() , grille.getRadius() , fill="red")
+            unGagnant()
+            grille.nextTurn()
+
+def send(arg):
+    s.send(arg.encode())
+    #sleep(1)
+#------------------
 
 def caseExist(x , y):
     if x<0 or x >= grille.getTailleX() or y<0 or y >= grille.getTailleY():
@@ -102,7 +132,7 @@ def caseExist(x , y):
     else:
         return True
 
-def getAdjacentTilesTo(case):      #retourne les cases adjacentes à  celle indiquée
+def getAdjacentTilesTo(case):      #retourne les cases adjacentes à  celle indiquée
     cases = []
     modelList = []
     if grille.getModel() == "hexagone":
@@ -119,11 +149,12 @@ def getAdjacentTilesTo(case):      #retourne les cases adjacentes à  celle ind
     return cases
 
 def unGagnant():
-    if not testSiCheminExiste('1'):
-        if not testSiCheminExiste('2'):
-            return False
-    grille.setFinish(True)
-    return True
+    if testSiCheminExiste('1'):
+        print("Le joueur 1 a gagné")
+        grille.setFinish(True)
+    elif testSiCheminExiste('2'):
+        print("Le joueur 2 a gagné")
+        grille.setFinish(True)
 
 def testSiCheminExiste(joueur):
     casesATester = []
@@ -236,22 +267,33 @@ Canvas.create_circle = _create_circle
 
 
 def Clic(event):
+    global joueur
     X = event.x
     Y = event.y
     for i in range(len(grille.getCases())):
         for j in range(len(grille.getCases()[0])):
             if sqrt((X-grille.getCases()[i][j].getX())**2+(Y-grille.getCases()[i][j].getY())**2)<grille.getRadius():
                 if grille.getGrid()[i][j]==0 and not grille.isFinished():
-                    if grille.getTurn()=="j1":
-                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="blue")
-                        grille.placer(Case(i, j) , '1')
+                    print(grille.getTurn() , "joueur")
+                    if grille.getTurn()==joueur:
+                        if joueur == "1":
+                            can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="blue")
+                            grille.placer(Case(i, j) , '1')
+                            a ="placer1"+ " " + str(i) + " " + str(j)
+                            send(a)
+
+                        elif joueur == "2":
+                            can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
+                            grille.placer(Case(i, j) , '2')
+                            a ="placer2"+ " " + str(i) + " " + str(j)
+                            send(a)
                         grille.nextTurn()
-                    else:
-                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
-                        grille.placer(Case(i, j) , '2')
-                        grille.nextTurn()
-                    print("partie pour un des deux joueurs :", unGagnant())
-                    grille.afficherGrille()
+##                    else:
+##                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
+##                        grille.placer(Case(i, j) , '2')
+##                        grille.nextTurn()
+
+                    unGagnant()
 
 def fillBoard(x , y, shiftX, shiftY):
     xshift2 = 0
@@ -270,6 +312,8 @@ def bordRougeBleu(x,y):
 #-------------début du programme-------------
 
 x,y = 11,11
+global joueur
+joueur = "0"
 
 fen = Tk()
 can = Canvas(fen, width=1200, height=800, bg='ivory')
@@ -288,6 +332,17 @@ bordRougeBleu(x , y)
 ##grille.placer(Case(3 , 0) , '1')
 ##grille.afficherGrille()
 ##print(unGagnant())
+
+ip = input("adresse ip: ")
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#socket.gethostname()
+port =8000
+s.connect((ip,port))
+
+thread1 = Thread(target = recieve)
+thread1.start()
+
+send("connection")
 
 can.bind('<Button-1>', Clic)
 fen.mainloop()
@@ -310,7 +365,3 @@ fen.mainloop()
 ##
 ##    entree = input("Entrer une commande")
 ##    inp = entree.split()
-
-
-
-
