@@ -15,7 +15,7 @@ class Grille(object):
         self.model = model
         ca = Case(0 , 0)
         self.radius = radius
-        self.grille = [[0 for x in range(self.tailleX)] for y in range(self.tailleY)]
+        self.grille = [["0" for x in range(self.tailleX)] for y in range(self.tailleY)]
         self.cases = [[ca for x in range(self.tailleX)] for y in range(self.tailleY)]
 
     def placer(self , case , joueur):
@@ -35,6 +35,11 @@ class Grille(object):
 
     def getGrid(self):
         return self.grille
+
+    def clearGrid(self):
+        for i in range(self.tailleX):
+            for j in range(self.tailleY):
+                self.grille[i][j] = "0"
 
     def getCases(self): #retourne les coordonnées en pixel des hexagones/cercles sur l'écran
         return self.cases
@@ -111,13 +116,11 @@ def recieve():
         elif data == "fin":
             s.close()
         elif d[0] == "placer1":
-            grille.placer(Case(int(d[1]) , int(d[2])), "1")
-            can.create_circle(grille.getCases()[int(d[1])][int(d[2])].getX() , grille.getCases()[int(d[1])][int(d[2])].getY() , grille.getRadius() , fill="blue")
+            addCircle(int(d[1]) , int(d[2]) , "1")
             unGagnant()
             grille.nextTurn()
         elif d[0] == "placer2":
-            grille.placer(Case(int(d[1]) , int(d[2])), "2")
-            can.create_circle(grille.getCases()[int(d[1])][int(d[2])].getX() , grille.getCases()[int(d[1])][int(d[2])].getY() , grille.getRadius() , fill="red")
+            addCircle(int(d[1]) , int(d[2]) , "2")
             unGagnant()
             grille.nextTurn()
 
@@ -152,9 +155,13 @@ def unGagnant():
     if testSiCheminExiste('1'):
         print("Le joueur 1 a gagné")
         grille.setFinish(True)
+        can.itemconfig(texte, text="Joueur 1 a gagné")
+        clearCircles()
     elif testSiCheminExiste('2'):
         print("Le joueur 2 a gagné")
         grille.setFinish(True)
+        can.itemconfig(texte, text="Joueur 2 a gagné")
+        clearCircles()
 
 def testSiCheminExiste(joueur):
     casesATester = []
@@ -221,6 +228,23 @@ def testSiCheminExiste(joueur):
                     return True
         return False
 
+def addCircle(x , y , joueur):
+    global circles
+    grille.placer(Case(x, y) , joueur)
+    if joueur=="1":
+        i = can.create_circle(grille.getCases()[x][y].getX() , grille.getCases()[x][y].getY() , 32 , fill="blue")
+    else:
+        i = can.create_circle(grille.getCases()[x][y].getX() , grille.getCases()[x][y].getY() , 32 , fill="red")
+    circles.append(i)
+
+def clearCircles():
+    global circles
+    for i in range(len(circles)):
+        can.delete(circles[i])
+    circles[:] = []
+    grille.clearGrid()
+    grille.setFinish(False)
+
 def displayCases(caseList):
     for i in range(len(caseList)):
         print(caseList[i].getX() , caseList[i].getY())
@@ -273,21 +297,21 @@ def Clic(event):
     for i in range(len(grille.getCases())):
         for j in range(len(grille.getCases()[0])):
             if sqrt((X-grille.getCases()[i][j].getX())**2+(Y-grille.getCases()[i][j].getY())**2)<grille.getRadius():
-                if grille.getGrid()[i][j]==0 and not grille.isFinished():
-                    print(grille.getTurn() , "joueur")
+                if grille.getGrid()[i][j]=="0" and not grille.isFinished():
+                    print(grille.getTurn())
                     if grille.getTurn()==joueur:
+                        print(grille.isFinished())
                         if joueur == "1":
-                            can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="blue")
-                            grille.placer(Case(i, j) , '1')
+                            addCircle(i , j , "1")
                             a ="placer1"+ " " + str(i) + " " + str(j)
                             send(a)
 
                         elif joueur == "2":
-                            can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
-                            grille.placer(Case(i, j) , '2')
+                            addCircle(i , j , "2")
                             a ="placer2"+ " " + str(i) + " " + str(j)
                             send(a)
                         grille.nextTurn()
+
 ##                    else:
 ##                        can.create_circle(grille.getCases()[i][j].getX() , grille.getCases()[i][j].getY() , grille.getRadius() , fill="red")
 ##                        grille.placer(Case(i, j) , '2')
@@ -320,23 +344,19 @@ can = Canvas(fen, width=1200, height=800, bg='ivory')
 can.pack(side=TOP)
 
 grille = Grille(x , y , 32 , "hexagone")                #1= horizontal , 2 = vertical
+global circles
+circles = []
 
 fillBoard(x , y , 60 , 60)
 
 bordRougeBleu(x , y)
-
-##grille.placer(Case(0 , 0) , '1')
-##grille.placer(Case(1 , 0) , '1')
-##grille.placer(Case(1 , 1) , '2')
-##grille.placer(Case(2 , 0) , '1')
-##grille.placer(Case(3 , 0) , '1')
-##grille.afficherGrille()
-##print(unGagnant())
+texte = can.create_text(1050 , 50 , font=('Helvetica' , 20) ,text="")
 
 ip = input("adresse ip: ")
+#ip="192.168.0.49"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #socket.gethostname()
-port =8000
+port =25565
 s.connect((ip,port))
 
 thread1 = Thread(target = recieve)
@@ -347,21 +367,11 @@ send("connection")
 can.bind('<Button-1>', Clic)
 fen.mainloop()
 
-
-##grille.afficherGrille()
-
-##entree = input("Entrer une commande")
-##inp = entree.split()
-
-
-##while (inp[0] != "exit"):       #boucle principale
-##    if inp[0] == "placer" and len(inp) == 4:
-##        grille.placer(Case(int(inp[1]), int(inp[2])) , inp[3])
-##        print("partie pour un des deux joueurs :", unGagnant())
-##        grille.afficherGrille()
+##i = w.create_line(xy, fill="red")
 ##
-##    elif inp[0] == "aff":
-##        grille.afficherGrille()
+##w.coords(i, new_xy) # change coordinates
+#w.itemconfig(i, fill="blue") # change color
 ##
-##    entree = input("Entrer une commande")
-##    inp = entree.split()
+##w.delete(i) # remove
+##
+##w.delete(ALL) # remove all items
