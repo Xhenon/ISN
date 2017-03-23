@@ -88,6 +88,12 @@ class Grille(object):
             s=""
         print()
 
+    def getOtherPlayer(self, joueur):
+        if(joueur == "1"):
+            return "2"
+        else:
+            return "1"
+
 class Case(object):
 
     def __init__(self, x , y):
@@ -105,29 +111,52 @@ class Case(object):
 
 #-----Méthodes pour connections en lignes
 def recieve():
-    global joueur
+    global joueur , showFT , firstTurn , originalPlayer
     while True:
         data = ''
         data = s.recv(1024).decode()
         d= data.split(" ")
         if d[0]== "j":
             joueur = d[1]
+            originalPlayer = d[1]
             print("Client affecté au joueur "+ joueur)
         elif data == "fin":
             s.close()
         elif d[0] == "placer1":
             addCircle(int(d[1]) , int(d[2]) , "1")
-            unGagnant()
             grille.nextTurn()
+            unGagnant()
         elif d[0] == "placer2":
             addCircle(int(d[1]) , int(d[2]) , "2")
-            unGagnant()
             grille.nextTurn()
+            unGagnant()
+        elif d[0] == "placer1f":
+            addCircle(int(d[1]) , int(d[2]) , "1")
+            grille.nextTurn()
+            firstTurn = False
+            showSwapButton()
+        elif data == "swap":
+            joueur = grille.getOtherPlayer(joueur)
+            showFT = False
+            print("call")
+        elif d[0] == "giveup":
+            print("Le joueur", grille.getOtherPlayer(d[1]), "a gagné")
+            grille.setFinish(True)
+            can.itemconfig(texte, text="Le joueur " +grille.getOtherPlayer(d[1])+" a gagné")
+            clearCircles()
 
 def send(arg):
     s.send(arg.encode())
     #sleep(1)
+
+def onClosing():
+    send("closing")
+    fen.destroy()
+    sys.exit(0)
 #------------------
+
+def giveUp():
+    send("giveup")
 
 def caseExist(x , y):
     if x<0 or x >= grille.getTailleX() or y<0 or y >= grille.getTailleY():
@@ -228,6 +257,29 @@ def testSiCheminExiste(joueur):
                     return True
         return False
 
+def swap():
+    global joueur
+    send("swap")
+    joueur = grille.getOtherPlayer(joueur)
+    removeSwapButton()
+
+def showSwapButton():
+    global swapButton
+    global swapWindow
+    swapButton = Button(text = "Echanger" , command = swap, anchor = W)
+    swapButton.configure(width = 10, activebackground = "#33B5E5", relief = FLAT)
+    swapWindow = can.create_window(1050, 300, anchor=NW, window=swapButton)
+
+def removeSwapButton():
+    global swapButton
+    global swapWindow
+    can.delete(swapButton)
+    can.delete(swapWindow)
+    showFT = False
+
+def giveUp():
+    send("giveup")
+
 def addCircle(x , y , joueur):
     global circles
     grille.placer(Case(x, y) , joueur)
@@ -238,12 +290,18 @@ def addCircle(x , y , joueur):
     circles.append(i)
 
 def clearCircles():
-    global circles
+    global circles , firstTurn , showFT , originalPlayer , joueur
     for i in range(len(circles)):
         can.delete(circles[i])
     circles[:] = []
     grille.clearGrid()
     grille.setFinish(False)
+    firstTurn = True
+    showFT = True
+    originalPlayer = grille.getOtherPlayer(originalPlayer)
+    joueur = str(originalPlayer)
+    if grille.getTurn()=="2":
+        grille.nextTurn()
 
 def displayCases(caseList):
     for i in range(len(caseList)):
@@ -291,7 +349,7 @@ Canvas.create_circle = _create_circle
 
 
 def Clic(event):
-    global joueur
+    global joueur , firstTurn
     X = event.x
     Y = event.y
     for i in range(len(grille.getCases())):
@@ -300,15 +358,22 @@ def Clic(event):
                 if grille.getGrid()[i][j]=="0" and not grille.isFinished():
                     print(grille.getTurn())
                     if grille.getTurn()==joueur:
-                        print(grille.isFinished())
                         if joueur == "1":
-                            addCircle(i , j , "1")
-                            a ="placer1"+ " " + str(i) + " " + str(j)
-                            send(a)
+                            if firstTurn == True:
+                                addCircle(i , j , "1")
+                                firstTurn = False
+                                a = "placer1f " + str(i) + " " + str(j)
+                                send(a)
+                            else:
+                                addCircle(i , j , "1")
+                                a ="placer1 " + str(i) + " " + str(j)
+                                send(a)
 
                         elif joueur == "2":
+                            if showFT:
+                                removeSwapButton()
                             addCircle(i , j , "2")
-                            a ="placer2"+ " " + str(i) + " " + str(j)
+                            a ="placer2 " + str(i) + " " + str(j)
                             send(a)
                         grille.nextTurn()
 
@@ -336,7 +401,8 @@ def bordRougeBleu(x,y):
 #-------------début du programme-------------
 
 x,y = 11,11
-global joueur
+global joueur, swapButton , swapWindow , firstTurn , showFT , originalPlayer
+firstTurn , showFT = True , True
 joueur = "0"
 
 fen = Tk()
@@ -348,24 +414,38 @@ global circles
 circles = []
 
 fillBoard(x , y , 60 , 60)
-
 bordRougeBleu(x , y)
 texte = can.create_text(1050 , 50 , font=('Helvetica' , 20) ,text="")
 
-ip = input("adresse ip: ")
-#ip="192.168.0.49"
+#ip = input("adresse ip: ")
+ip="192.168.0.49"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #socket.gethostname()
 port =25565
 s.connect((ip,port))
+
+fen.protocol("WM_DELETE_WINDOW", onClosing)
 
 thread1 = Thread(target = recieve)
 thread1.start()
 
 send("connection")
 
+button1 = Button(text = "Abandonner" , command = giveUp, anchor = W)
+button1.configure(width = 10, activebackground = "#33B5E5", relief = FLAT)
+button1_window = can.create_window(1050, 250, anchor=NW, window=button1)
+
 can.bind('<Button-1>', Clic)
 fen.mainloop()
+
+
+
+
+##frame = Frame(can, bg='grey', width=400, height=40)
+##frame.pack(fill='x')
+##button1 = Button(frame, text='Add Rect')
+##button1.pack(side='left', padx=10)
+
 
 ##i = w.create_line(xy, fill="red")
 ##
