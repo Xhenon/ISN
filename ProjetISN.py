@@ -205,8 +205,8 @@ def testSiCheminExiste(joueur):
         for i in range(len(casesDeDepart)):       #pour toutes les cases de départ, si elles n'appartiennent pas deja aux cases testées:
             if not finished:
                 if len(casesTestees) != 0:
-                    if not listContainCase(casesTestees, casesDeDepart[0]):
-                        casesATester.append(casesDeDepart[0])
+                    if not listContainCase(casesTestees, casesDeDepart[i]):
+                        casesATester.append(casesDeDepart[i])
                         while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
                             for i in range(len(getAdjacentTilesTo(casesATester[0]))):
                                 if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur1Cases() , getAdjacentTilesTo(casesATester[0])[i]):
@@ -215,7 +215,7 @@ def testSiCheminExiste(joueur):
                             casesATester.pop(0)
 
                 else:       #dans le cas ou la liste des cases à tester est vide:
-                    casesATester.append(casesDeDepart[0])
+                    casesATester.append(casesDeDepart[i])
                     while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
                         for i in range(len(getAdjacentTilesTo(casesATester[0]))):
                             if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur1Cases() , getAdjacentTilesTo(casesATester[0])[i]):
@@ -235,8 +235,8 @@ def testSiCheminExiste(joueur):
         for i in range(len(casesDeDepart)):       #pour toutes les cases de départ, si elles n'appartiennent pas deja aux cases testées:
             if not finished:
                 if len(casesTestees) != 0:
-                    if not listContainCase(casesTestees, casesDeDepart[0]):
-                        casesATester.append(casesDeDepart[0])
+                    if not listContainCase(casesTestees, casesDeDepart[i]):
+                        casesATester.append(casesDeDepart[i])
                         while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
                             for i in range(len(getAdjacentTilesTo(casesATester[0]))):
                                 if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur2Cases() , getAdjacentTilesTo(casesATester[0])[i]):
@@ -245,7 +245,7 @@ def testSiCheminExiste(joueur):
                             casesATester.pop(0)
 
                 else:       #dans le cas ou la liste des cases à tester est vide:
-                    casesATester.append(casesDeDepart[0])
+                    casesATester.append(casesDeDepart[i])
                     while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
                         for i in range(len(getAdjacentTilesTo(casesATester[0]))):
                             if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur2Cases() , getAdjacentTilesTo(casesATester[0])[i]):
@@ -418,7 +418,7 @@ bordRougeBleu(x , y)
 texte = can.create_text(1050 , 50 , font=('Helvetica' , 20) ,text="")
 
 #ip = input("adresse ip: ")
-ip="192.168.0.49"
+ip="192.168.0.38"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #socket.gethostname()
 port =25565
