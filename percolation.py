@@ -23,7 +23,7 @@ class Grille(object):
         self.empty = "x"
         self.tailleY = y
         self.model = model
-        self.grille = [[self.empty for x in range(self.tailleX)] for y in range(self.tailleY)]
+        self.grille = [[self.empty for y in range(self.tailleY)] for x in range(self.tailleX)]
 
     def getTailleX(self):
         return self.tailleX
@@ -86,31 +86,28 @@ def testSiCheminExiste():
             casesDeDepart.append(grille.getEmptyCases()[i])
 
     for i in range(len(casesDeDepart)):       #pour toutes les cases de départ
-        if not finished:
-            if len(casesTestees) != 0 :  #dans le cas ou la liste des cases testées n'est pas vide, on s'assure que la case que l'on va ajouter à la liste des cases à tester n'a pas deja été traitée
-                if not listContainCase(casesTestees, casesDeDepart[i]):
-                    casesATester.append(casesDeDepart[i])
-
-            else:       #dans le cas ou la liste des cases testées est vide, c'est à dire au début de l'algorithme
+        if len(casesTestees) != 0 :  #dans le cas ou la liste des cases testées n'est pas vide, on s'assure que la case que l'on va ajouter à la liste des cases à tester n'a pas deja été traitée
+            if not listContainCase(casesTestees, casesDeDepart[i]):
                 casesATester.append(casesDeDepart[i])
-            while len(casesATester) !=0:        #tant que la liste des cases Ã  tester n'est pas vide, on cherche des voisins
-                for i in range(len(getAdjacentTilesTo(casesATester[0]))):
-                    if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getEmptyCases() , getAdjacentTilesTo(casesATester[0])[i]):
-                        casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
-                casesTestees.append(casesATester[0])
-                casesATester.pop(0)
-            if listContainY(casesTestees , 0) and listContainY(casesTestees , grille.getTailleY()-1):
-                for i in range(len(casesTestees)):
-                    can.itemconfig(ids[casesTestees[i].getX()][casesTestees[i].getY()] , fill="blue")
-                for i in range(len(casesDeDepart)):
-                    can.itemconfig(ids[casesDeDepart[i].getX()][casesDeDepart[i].getY()] , fill="blue")
-                finished = True
-                return True
+
+        else:       #dans le cas ou la liste des cases testées est vide, c'est à dire au début de l'algorithme
+            casesATester.append(casesDeDepart[i])
+        while len(casesATester) !=0:        #tant que la liste des cases Ã  tester n'est pas vide, on cherche des voisins
+            for i in range(len(getAdjacentTilesTo(casesATester[0]))):
+                if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getEmptyCases() , getAdjacentTilesTo(casesATester[0])[i]):
+                    casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
+            casesTestees.append(casesATester[0])
+            casesATester.pop(0)
+        if listContainY(casesTestees , 0) and listContainY(casesTestees , grille.getTailleY()-1):
+            for i in range(len(casesTestees)):
+                can.itemconfig(ids[casesTestees[i].getX()][casesTestees[i].getY()] , fill="blue")
+            finished = True
         for i in range(len(casesTestees)):
             can.itemconfig(ids[casesTestees[i].getX()][casesTestees[i].getY()] , fill="blue")
-        for i in range(len(casesDeDepart)):
-            can.itemconfig(ids[casesDeDepart[i].getX()][casesDeDepart[i].getY()] , fill="blue")
-    return False
+    if finished:
+        return True
+    else:
+        return False
 
 def areCasesEqual(case1 , case2):       #return True si case1 et case2 ont les memes coordonnées
     if(case1.getX() == case2.getX() and case1.getY() == case2.getY()):
@@ -148,6 +145,9 @@ def listContainY(list , y):     #return True si la liste contient une case avec 
             return True
     return False
 
+def drawGraph(x , y , lengthX , lengthY , nbPoint , values, bornInf , bornSup):
+    can.create_line()
+
 
 def getAdjacentTilesTo(case):      #retourne les cases adjacentes Ã   celle indiquÃ©e
     cases = []
@@ -178,13 +178,14 @@ def getAdjacentTilesTo(case):      #retourne les cases adjacentes Ã   celle in
             cases.append(Case(modelList[i].getX()+case.getX() , modelList[i].getY()+case.getY()))
     return cases
 
-def createPolygons(x , y , lengthUnit , model):
+def createPolygons(x , y , model , yfenSize):
     global ids
+    lengthUnit = yfenSize/(1+2*y)
     xSize = 1
     ySize = 1
     xshift2 = 0
-    xshift = lengthUnit
-    yshift = lengthUnit
+    xshift = 2*lengthUnit
+    yshift = 2*lengthUnit
     if model == "hexagone":
         for j in range(y):
             for i in range(x):
@@ -193,7 +194,7 @@ def createPolygons(x , y , lengthUnit , model):
     elif model == "square":
         for j in range(y):
             for i in range(x):
-                ids[i][j] = can.create_polygon((xshift-lengthUnit+i*2*lengthUnit)*xSize , (yshift+lengthUnit+j*2*lengthUnit)*ySize , (xshift-lengthUnit+i*2*lengthUnit)*xSize , (yshift-lengthUnit+j*2*lengthUnit)*ySize , (xshift+lengthUnit+i*2*lengthUnit*xSize) , (yshift -lengthUnit+j*2*lengthUnit)*ySize , (xshift+lengthUnit+i*2*lengthUnit)*xSize , (yshift+lengthUnit+j*2*lengthUnit)*ySize, outline= "black", fill="white", width=lengthUnit/12.5)
+                ids[i][j] = can.create_polygon((xshift-lengthUnit+i*2*lengthUnit)*xSize , (yshift+lengthUnit+j*2*lengthUnit)*ySize , (xshift-lengthUnit+i*2*lengthUnit)*xSize , (yshift-lengthUnit+j*2*lengthUnit)*ySize , (xshift+lengthUnit+i*2*lengthUnit)*xSize , (yshift-lengthUnit+j*2*lengthUnit)*ySize , (xshift+lengthUnit+i*2*lengthUnit)*xSize , (yshift+lengthUnit+j*2*lengthUnit)*ySize, outline= "black", fill="white", width=lengthUnit/20)
     elif model == "triangle":
         for j in range(y):
             for i in range(int(x/2)):
@@ -228,27 +229,27 @@ global ids , x , y , prob
 x = 10
 y = 10
 model = "square"
-ids = [[-1 for x in range(x)] for y in range(y)]
+ids = [[-1 for y in range(y)] for x in range(x)]
 grille = Grille(x , y , model)
-prob = 0.30
+prob = 0.6
 essais = 2
 reussite = 0
 
 fen = Tk()
-can = Canvas(fen, width=1600, height=900, bg='ivory')
+can = Canvas(fen, width=1600, height=800, bg='ivory')
 can.pack(side=TOP)
 
-createPolygons(10 , 10 , 40 , model)
+createPolygons(x , y , model , 800)
 
 fillGrid(prob)
 
 button1 = Button(text = "Check" , command = testSiCheminExiste, anchor = W)
 button1.configure(width = 10, activebackground = "#33B5E5", relief = FLAT)
-button1_window = can.create_window(1050, 850, anchor=NW, window=button1)
+button1_window = can.create_window(1050, 750, anchor=NW, window=button1)
 
 button2 = Button(text = "Refresh" , command = refresh, anchor = W)
 button2.configure(width = 10, activebackground = "#33B5E5", relief = FLAT)
-button2_window = can.create_window(1050, 800, anchor=NW, window=button2)
+button2_window = can.create_window(1050, 700, anchor=NW, window=button2)
 
 can.bind('<Button-1>', Clic)
 fen.mainloop()
