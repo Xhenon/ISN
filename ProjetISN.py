@@ -180,6 +180,20 @@ def getAdjacentTilesTo(case):      #retourne les cases adjacentes à  celle indi
             cases.append(Case(modelList[i].getX()+case.getX() , modelList[i].getY()+case.getY()))
     return cases
 
+def onlyBelongTo(cases , joueur):
+    c = []
+    if joueur == "1":
+        for i in range (len(cases)):
+            for j in range(len(grille.getJoueur1Cases())):
+                if areCasesEqual(cases[i] , grille.getJoueur1Cases()[j]):
+                    c.append(cases[i])
+    if joueur == "2":
+        for i in range (len(cases)):
+            for j in range(len(grille.getJoueur2Cases())):
+                if areCasesEqual(cases[i] , grille.getJoueur2Cases()[j]):
+                    c.append(cases[i])
+    return c
+
 def unGagnant():
     if testSiCheminExiste('1'):
         print("Le joueur 1 a gagné")
@@ -199,7 +213,7 @@ def testSiCheminExiste(joueur):
     finished = False
     if joueur == '1':
         for i in range(len(grille.getJoueur1Cases())):     #pour toutes les cases appartenant au joueur 1, on cherche les cases collées aux bords (casesDeDepart)
-            if grille.getJoueur1Cases()[i].getX()==0 or grille.getJoueur1Cases()[i].getX()==grille.getTailleX()-1:
+            if grille.getJoueur1Cases()[i].getX()==0 :
                 casesDeDepart.append(grille.getJoueur1Cases()[i])
 
         for i in range(len(casesDeDepart)):       #pour toutes les cases de départ, si elles n'appartiennent pas deja aux cases testées:
@@ -207,21 +221,15 @@ def testSiCheminExiste(joueur):
                 if len(casesTestees) != 0:
                     if not listContainCase(casesTestees, casesDeDepart[i]):
                         casesATester.append(casesDeDepart[i])
-                        while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
-                            for i in range(len(getAdjacentTilesTo(casesATester[0]))):
-                                if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur1Cases() , getAdjacentTilesTo(casesATester[0])[i]):
-                                    casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
-                            casesTestees.append(casesATester[0])
-                            casesATester.pop(0)
 
                 else:       #dans le cas ou la liste des cases à tester est vide:
                     casesATester.append(casesDeDepart[i])
-                    while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
-                        for i in range(len(getAdjacentTilesTo(casesATester[0]))):
-                            if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur1Cases() , getAdjacentTilesTo(casesATester[0])[i]):
-                                casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
-                        casesTestees.append(casesATester[0])
-                        casesATester.pop(0)
+                while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
+                            for i in range(len(onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "1"))):
+                                if not listContainCase(casesTestees, onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "1")[i]) and not listContainCase(casesATester, onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "1")[i]) and listContainCase(grille.getJoueur1Cases() , onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "1")[i]):
+                                    casesATester.append(onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "1")[i])
+                            casesTestees.append(casesATester[0])
+                            casesATester.pop(0)
                 if listContainX(casesTestees , 0) and listContainX(casesTestees , grille.getTailleX()-1):
                     finished = True
                     return True
@@ -229,7 +237,7 @@ def testSiCheminExiste(joueur):
 
     elif joueur == '2':
         for i in range(len(grille.getJoueur2Cases())):     #pour toutes les cases appartenant au joueur 2, on cherche les cases collées aux bords (casesDeDepart)
-            if grille.getJoueur2Cases()[i].getY()==0 or grille.getJoueur2Cases()[i].getY()==grille.getTailleY()-1:
+            if grille.getJoueur2Cases()[i].getY()==0:
                 casesDeDepart.append(grille.getJoueur2Cases()[i])
 
         for i in range(len(casesDeDepart)):       #pour toutes les cases de départ, si elles n'appartiennent pas deja aux cases testées:
@@ -237,21 +245,15 @@ def testSiCheminExiste(joueur):
                 if len(casesTestees) != 0:
                     if not listContainCase(casesTestees, casesDeDepart[i]):
                         casesATester.append(casesDeDepart[i])
-                        while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
-                            for i in range(len(getAdjacentTilesTo(casesATester[0]))):
-                                if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur2Cases() , getAdjacentTilesTo(casesATester[0])[i]):
-                                    casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
-                            casesTestees.append(casesATester[0])
-                            casesATester.pop(0)
 
                 else:       #dans le cas ou la liste des cases à tester est vide:
                     casesATester.append(casesDeDepart[i])
-                    while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
-                        for i in range(len(getAdjacentTilesTo(casesATester[0]))):
-                            if not listContainCase(casesTestees, getAdjacentTilesTo(casesATester[0])[i]) and not listContainCase(casesATester, getAdjacentTilesTo(casesATester[0])[i]) and listContainCase(grille.getJoueur2Cases() , getAdjacentTilesTo(casesATester[0])[i]):
-                                casesATester.append(getAdjacentTilesTo(casesATester[0])[i])
-                        casesTestees.append(casesATester[0])
-                        casesATester.pop(0)
+                while len(casesATester) !=0:        #tant que la liste des cases à tester n'est pas vide, on cherche des voisins
+                            for i in range(len(onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "2"))):
+                                if not listContainCase(casesTestees, onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "2")[i]) and not listContainCase(casesATester, onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "2")[i]) and listContainCase(grille.getJoueur1Cases() , onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "2")[i]):
+                                    casesATester.append(onlyBelongTo(getAdjacentTilesTo(casesATester[0]) , "2")[i])
+                            casesTestees.append(casesATester[0])
+                            casesATester.pop(0)
                 if listContainY(casesTestees , 0) and listContainY(casesTestees , grille.getTailleY()-1):
                     finished = True
                     return True
@@ -417,8 +419,12 @@ fillBoard(x , y , 60 , 60)
 bordRougeBleu(x , y)
 texte = can.create_text(1050 , 50 , font=('Helvetica' , 20) ,text="")
 
+##addCircle(1 , 1 , "2")
+##addCircle(1 , 3 , "2")
+##print(len(onlyBelongTo(getAdjacentTilesTo(Case(1 , 2)) , "2")))
+
 #ip = input("adresse ip: ")
-ip="192.168.0.38"
+ip="172.16.202.7"
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #socket.gethostname()
 port =25565
